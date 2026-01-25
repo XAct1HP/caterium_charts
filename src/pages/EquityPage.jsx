@@ -26,7 +26,7 @@ export default function EquityPage() {
   )
 }
 
-const wrap = { width: "100vw", height: "100vh", background: "transparent", padding: 16, boxSizing: "border-box", fontFamily: "Inter, system-ui, Arial" }
+const wrap = { width: "100vw", height: "100vh", background: "#000", padding: 16, boxSizing: "border-box", fontFamily: "Inter, system-ui, Arial" }
 const loading = { color: "#777", fontSize: 12 }
 const err = { color: "#777", fontSize: 12, marginBottom: 8 }
 const tick = { fill: "#777", fontSize: 12 }
