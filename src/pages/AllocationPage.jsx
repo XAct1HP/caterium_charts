@@ -64,18 +64,6 @@ export default function AllocationPage() {
               />
             </AreaChart>
           </ResponsiveContainer>
-
-          {/* Simple, high-contrast labels */}
-          <div style={legendRow}>
-            <div style={legendItem}>
-              <span style={{ ...dot, background: "#C9A24D" }} />
-              <span>Main Strategy</span>
-            </div>
-            <div style={legendItem}>
-              <span style={{ ...dot, background: "#777" }} />
-              <span>Reserve Fund</span>
-            </div>
-          </div>
         </>
       )}
     </div>
