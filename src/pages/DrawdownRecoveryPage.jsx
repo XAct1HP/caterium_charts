@@ -107,6 +107,7 @@ const wrap = {
   padding: 16,
   boxSizing: "border-box",
   fontFamily: "Inter, system-ui, Arial",
+  overflow: "hidden"
 }
 
 const loading = { color: "#777", fontSize: 12 }
