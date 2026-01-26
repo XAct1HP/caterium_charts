@@ -1,69 +1,98 @@
-import React from "react"
+// src/pages/RiskReturnPage.jsx
+import React, { useMemo } from "react"
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  ResponsiveContainer,
+  ScatterChart,
+  Scatter,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ReferenceLine,
 } from "recharts"
 import { useJson } from "../lib/useJson"
 
-export default function AccountEquityPage() {
+export default function RiskReturnPage() {
   const { data, error } = useJson("/equity_chart_data.json")
+
+  const chartData = useMemo(() => {
+    if (!Array.isArray(data) || data.length === 0) return null
+
+    // Base equity for normalized return
+    const base = Number(data[0]?.equity ?? data[0]?.account_equity ?? 1) || 1
+
+    // Build points: X=drawdown, Y=return
+    return data
+      .map((d) => {
+        const equity = Number(d.equity ?? d.account_equity)
+        const dd = Number(d.drawdown)
+        if (!Number.isFinite(equity) || !Number.isFinite(dd)) return null
+
+        return {
+          drawdown: dd, // negative values (0 at peak)
+          return: (equity - base) / base, // normalized return from start
+        }
+      })
+      .filter(Boolean)
+  }, [data])
 
   return (
     <div style={wrap}>
-      {!data ? <div style={loading}>Loading…</div> : (
-        <>
-          {error ? <div style={err}>Data error: {error}</div> : null}
+      {!chartData ? (
+        <div style={loading}>
+          {error ? `Data error: ${error}` : "Loading…"}
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height="100%">
+          <ScatterChart margin={{ top: 18, right: 18, bottom: 18, left: 18 }}>
+            <CartesianGrid stroke="#151515" vertical={false} />
 
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data}>
-              <XAxis dataKey="date" />
+            {/* X = Drawdown */}
+            <XAxis
+              dataKey="drawdown"
+              type="number"
+              domain={["auto", 0]}
+              tick={tick}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={fmtPct0}
+            />
 
-              {/* Equity axis (left) */}
-              <YAxis
-                yAxisId="equity"
-                tick={tick}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={fmtMoney}
-              />
+            {/* Y = Return */}
+            <YAxis
+              dataKey="return"
+              type="number"
+              domain={["auto", "auto"]}
+              tick={tick}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={fmtPct0}
+            />
 
-              {/* Drawdown axis (right) — hidden, used for scaling */}
-              <YAxis
-                yAxisId="dd"
-                orientation="right"
-                hide
-                domain={["auto", 0]}
-              />
+            {/* Reference lines at 0 */}
+            <ReferenceLine x={0} stroke="#222" />
+            <ReferenceLine y={0} stroke="#222" />
 
-              <Tooltip
-                contentStyle={tooltip}
-                labelStyle={{ color: "#AAA" }}
-                formatter={(value, name) => {
-                  if (name === "equity") return [fmtMoney(value), "Equity"]
-                  if (name === "drawdown") return [fmtPct(value), "Drawdown"]
-                  return [value, name]
-                }}
-              />
+            <Tooltip
+              contentStyle={tooltip}
+              labelStyle={{ color: "#AAA" }}
+              formatter={(value, name) => {
+                if (name === "drawdown") return [fmtPct2(value), "Drawdown"]
+                if (name === "return") return [fmtPct2(value), "Return"]
+                return [value, name]
+              }}
+            />
 
-              <Line
-                type="monotone"
-                dataKey="equity"
-                yAxisId="equity"
-                stroke="#C9A24D"
-                strokeWidth={2}
-                dot={false}
-              />
-
-              <Line
-                type="monotone"
-                dataKey="drawdown"
-                yAxisId="dd"
-                stroke="#B22222"
-                strokeWidth={2}
-                dot={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </>
+            {/* Envelope cloud (points) */}
+            <Scatter
+              data={chartData}
+              fill="#C9A24D"
+              opacity={0.75}
+              // Small points, no labels
+              shape="circle"
+            />
+          </ScatterChart>
+        </ResponsiveContainer>
       )}
     </div>
   )
@@ -79,17 +108,21 @@ const wrap = {
 }
 
 const loading = { color: "#777", fontSize: 12 }
-const err = { color: "#777", fontSize: 12, marginBottom: 8 }
 const tick = { fill: "#777", fontSize: 12 }
-const tooltip = { backgroundColor: "#0B0B0B", border: "1px solid #222", color: "#E6E6E6", fontSize: 12 }
-
-function fmtMoney(v) {
-  const n = Number(v)
-  if (!Number.isFinite(n)) return v
-  return n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 })
+const tooltip = {
+  backgroundColor: "#0B0B0B",
+  border: "1px solid #222",
+  color: "#E6E6E6",
+  fontSize: 12,
 }
 
-function fmtPct(v) {
+function fmtPct0(v) {
+  const n = Number(v)
+  if (!Number.isFinite(n)) return v
+  return `${(n * 100).toFixed(0)}%`
+}
+
+function fmtPct2(v) {
   const n = Number(v)
   if (!Number.isFinite(n)) return v
   return `${(n * 100).toFixed(2)}%`
