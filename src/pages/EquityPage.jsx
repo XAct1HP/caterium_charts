@@ -1,39 +1,46 @@
 // src/pages/EquityPage.jsx
-import React, { useEffect, useMemo, useState } from "react"
+import React, { useMemo, useState } from "react"
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
 } from "recharts"
 import { useJson } from "../lib/useJson"
 
 export default function EquityPage() {
-  // ✅ Use the updated equity curve file
+  // ✅ Updated equity curve data
   const { data, error } = useJson("/equity_curve_updated.json")
 
-  // Load benchmark only when needed (still smooth once shown)
-  // Always load benchmark data
+  // ✅ Always load benchmark (prevents "Unexpected token '<'" from null/invalid fetches)
   const { data: benchData, error: benchErr } = useJson("/benchmark_equity_curve.json")
 
-  // Merge series by date so both lines align perfectly
+  const [showBenchmark, setShowBenchmark] = useState(false)
+
+  // Merge benchmark into the same dataset by date (only when toggle is on)
   const merged = useMemo(() => {
     if (!Array.isArray(data)) return null
-    if (!showBenchmark) return data
+    if (!showBenchmark || !Array.isArray(benchData)) return data
 
-    const benchMap = new Map((benchData || []).map((d) => [d.date, d]))
-    return data.map((d) => {
-      const b = benchMap.get(d.date)
-      return {
-        ...d,
-        spx_equity_index: b ? b.equity_index : null,
-      }
-    })
+    const benchMap = new Map(benchData.map((d) => [d.date, d]))
+    return data.map((d) => ({
+      ...d,
+      spx_equity_index: benchMap.get(d.date)?.equity_index ?? null,
+    }))
   }, [data, benchData, showBenchmark])
 
   return (
     <div style={wrap}>
-      {!merged ? <div style={loading}>Loading…</div> : (
+      {!merged ? (
+        <div style={loading}>Loading…</div>
+      ) : (
         <>
           {error ? <div style={err}>Data error: {error}</div> : null}
-          {benchErr ? <div style={err}>Benchmark error: {benchErr}</div> : null}
+          {showBenchmark && benchErr ? (
+            <div style={err}>Benchmark error: {benchErr}</div>
+          ) : null}
 
           <div style={topBar}>
             <button
@@ -58,19 +65,19 @@ export default function EquityPage() {
                 stroke="#C9A24D"
                 strokeWidth={2}
                 dot={false}
-                isAnimationActive={true}
+                isAnimationActive
                 animationDuration={600}
               />
 
-              {/* Benchmark (smooth fade-in / draw-in) */}
+              {/* Benchmark (smooth appearance) */}
               {showBenchmark && (
                 <Line
                   type="monotone"
                   dataKey="spx_equity_index"
-                  stroke="#66B6FF"   // light blue
+                  stroke="#66B6FF"
                   strokeWidth={2}
                   dot={false}
-                  isAnimationActive={true}
+                  isAnimationActive
                   animationDuration={900}
                 />
               )}
@@ -82,6 +89,7 @@ export default function EquityPage() {
   )
 }
 
+// Matches your current styling file :contentReference[oaicite:0]{index=0}
 const wrap = {
   width: "100vw",
   height: "100vh",
@@ -111,4 +119,9 @@ const btn = {
 const loading = { color: "#777", fontSize: 12 }
 const err = { color: "#777", fontSize: 12, marginBottom: 8 }
 const tick = { fill: "#777", fontSize: 12 }
-const tooltip = { backgroundColor: "#0B0B0B", border: "1px solid #222", color: "#E6E6E6", fontSize: 12 }
+const tooltip = {
+  backgroundColor: "#0B0B0B",
+  border: "1px solid #222",
+  color: "#E6E6E6",
+  fontSize: 12,
+}
