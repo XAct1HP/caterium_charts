@@ -1,3 +1,4 @@
+// src/pages/DrawdownPage.jsx
 import React from "react"
 import {
   AreaChart,
@@ -26,7 +27,7 @@ export default function DrawdownPage() {
 
   const [showBenchmark, setShowBenchmark] = React.useState(false)
 
-  // Kill scrollbars in embeds (Framer)
+  // Kill scrollbars (Framer-safe)
   React.useEffect(() => {
     const prevHtml = document.documentElement.style.overflow
     const prevBody = document.body.style.overflow
@@ -39,42 +40,34 @@ export default function DrawdownPage() {
   }, [])
 
   const data = React.useMemo(() => {
-    if (!Array.isArray(dd) || dd.length === 0) return null
-    // Keep benchmark always mounted to avoid “stutter”; just fade it in/out.
+    if (!Array.isArray(dd)) return null
     const b = Array.isArray(bench) ? bench : null
     return dd.map((d, i) => ({
       ...d,
-      benchmarkDrawdown: b?.[i]?.drawdown,
+      benchmarkDrawdown: b?.[i]?.drawdown ?? null,
     }))
   }, [dd, bench])
 
   const maxDD = React.useMemo(() => {
-    if (!Array.isArray(data) || data.length === 0) return null
-    let best = null
-    for (const d of data) {
-      if (!d || typeof d.drawdown !== "number" || !d.date) continue
-      if (!best || d.drawdown < best.drawdown) best = d
-    }
-    return best
+    if (!Array.isArray(data)) return null
+    return data.reduce((min, d) =>
+      d.drawdown < min.drawdown ? d : min
+    )
   }, [data])
 
   return (
     <div style={wrap}>
-      {/* simple CSS to fade the benchmark line smoothly */}
       <style>{`
-        .bench-path path {
+        .bench-line path {
           transition: opacity 260ms ease;
         }
       `}</style>
 
-      <div style={topbar}>
+      <div style={topBar}>
         <button
           type="button"
           onClick={() => setShowBenchmark((v) => !v)}
-          style={{
-            ...btn,
-            ...(showBenchmark ? btnOn : null),
-          }}
+          style={btn}
         >
           {showBenchmark ? "Hide S&P 500" : "Compare to S&P 500"}
         </button>
@@ -85,80 +78,79 @@ export default function DrawdownPage() {
       ) : (
         <>
           {ddErr ? <div style={err}>Data error: {ddErr}</div> : null}
-          {benchErr ? <div style={err}>Benchmark error: {benchErr}</div> : null}
+          {showBenchmark && benchErr ? (
+            <div style={err}>Benchmark error: {benchErr}</div>
+          ) : null}
 
-          <div style={chartWrap}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data} margin={{ top: 8, right: 16, left: 4, bottom: 8 }}>
-                <XAxis
-                  dataKey="date"
-                  tick={tick}
-                  axisLine={false}
-                  tickLine={false}
-                  minTickGap={28}
-                />
-                <YAxis
-                  tick={tick}
-                  axisLine={false}
-                  tickLine={false}
-                  domain={["auto", 0]}
-                  tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
-                />
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ top: 8, right: 16, left: 4, bottom: 8 }}>
+              <XAxis
+                dataKey="date"
+                hide
+              />
+              <YAxis
+                tick={tick}
+                axisLine={false}
+                tickLine={false}
+                domain={["auto", 0]}
+                tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
+              />
 
-                <Tooltip
-                  contentStyle={tooltip}
-                  labelStyle={{ color: "#AAA" }}
-                  itemStyle={{ color: GOLD }}
-                  formatter={(v, name) => {
-                    const label =
-                      name === "benchmarkDrawdown" ? "S&P 500 Drawdown" : "Drawdown"
-                    return [formatPct(v), label]
+              <Tooltip
+                contentStyle={tooltip}
+                labelStyle={{ color: "#AAA" }}
+                itemStyle={{ color: GOLD }}
+                formatter={(v, name) => {
+                  const label =
+                    name === "benchmarkDrawdown"
+                      ? "S&P 500 Drawdown"
+                      : "Drawdown"
+                  return [formatPct(v), label]
+                }}
+              />
+
+              {/* Portfolio drawdown */}
+              <Area
+                type="monotone"
+                dataKey="drawdown"
+                stroke={RED}
+                fill={RED}
+                fillOpacity={0.22}
+                strokeWidth={2}
+                dot={false}
+                isAnimationActive={false}
+              />
+
+              {/* Benchmark drawdown (always mounted, fades in/out) */}
+              <Line
+                className="bench-line"
+                type="monotone"
+                dataKey="benchmarkDrawdown"
+                stroke={ORANGE}
+                strokeWidth={2}
+                dot={false}
+                isAnimationActive={false}
+                strokeOpacity={showBenchmark ? 1 : 0}
+              />
+
+              {maxDD && (
+                <ReferenceDot
+                  x={maxDD.date}
+                  y={maxDD.drawdown}
+                  r={6}
+                  fill={RED}
+                  stroke="#000"
+                  strokeWidth={2}
+                  label={{
+                    value: "Max Drawdown",
+                    position: "bottom",
+                    fill: "#E6E6E6",
+                    fontSize: 12,
                   }}
                 />
-
-                {/* Portfolio drawdown */}
-                <Area
-                  type="monotone"
-                  dataKey="drawdown"
-                  stroke={RED}
-                  fill={RED}
-                  fillOpacity={0.22}
-                  strokeWidth={2}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-
-                {/* Benchmark drawdown (always mounted, just fades) */}
-                <Line
-                  className="bench-path"
-                  type="monotone"
-                  dataKey="benchmarkDrawdown"
-                  stroke={ORANGE}
-                  strokeWidth={2}
-                  dot={false}
-                  isAnimationActive={false}
-                  strokeOpacity={showBenchmark ? 1 : 0}
-                />
-
-                {maxDD ? (
-                  <ReferenceDot
-                    x={maxDD.date}
-                    y={maxDD.drawdown}
-                    r={6}
-                    fill={RED}
-                    stroke="#000"
-                    strokeWidth={2}
-                    label={{
-                      value: "Max Drawdown",
-                      position: "bottom",
-                      fill: "#E6E6E6",
-                      fontSize: 12,
-                    }}
-                  />
-                ) : null}
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+              )}
+            </AreaChart>
+          </ResponsiveContainer>
         </>
       )}
     </div>
@@ -175,46 +167,26 @@ const wrap = {
   overflow: "hidden",
 }
 
-const topbar = {
+const topBar = {
   display: "flex",
-  alignItems: "flex-start",
-  justifyContent: "space-between",
-  gap: 12,
+  justifyContent: "flex-end",
   marginBottom: 10,
 }
 
-const title = { color: "#EDEDED", fontSize: 16, fontWeight: 600, lineHeight: 1.1 }
-const subtitle = { color: "#8A8A8A", fontSize: 12, marginTop: 6, maxWidth: 520 }
-
-const chartWrap = {
-  width: "100%",
-  height: "calc(100vh - 86px)",
-  border: "1px solid #151515",
-  borderRadius: 14,
-  overflow: "hidden",
-  background: "#050505",
-}
-
 const btn = {
-  background: "#0B0B0B",
-  color: "#CFCFCF",
+  background: "rgba(255,255,255,0.04)",
   border: "1px solid #222",
+  color: "#E6E6E6",
+  padding: "8px 12px",
   borderRadius: 10,
-  padding: "10px 12px",
   fontSize: 12,
   cursor: "pointer",
-  transition: "all 200ms ease",
-  userSelect: "none",
-  whiteSpace: "nowrap",
-}
-const btnOn = {
-  borderColor: GOLD,
-  color: GOLD,
 }
 
 const loading = { color: "#777", fontSize: 12 }
 const err = { color: "#777", fontSize: 12, marginBottom: 6 }
 const tick = { fill: "#777", fontSize: 12 }
+
 const tooltip = {
   backgroundColor: "#0B0B0B",
   border: "1px solid #222",
