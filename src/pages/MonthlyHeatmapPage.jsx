@@ -1,4 +1,5 @@
-import React from "react"
+// src/pages/MonthlyHeatmapPage.jsx
+import React, { useEffect } from "react"
 import { useJson } from "../lib/useJson"
 
 const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
@@ -7,10 +8,9 @@ function clamp(x, a, b) {
   return Math.max(a, Math.min(b, x))
 }
 
-// Use EXACT same colors as legend:
-const RED = [217, 75, 75]       // rgb(217,75,75)
-const ORANGE = [201, 162, 77]   // rgb(201,162,77)
-const GREEN = [76, 175, 80]     // rgb(76,175,80)
+const RED = [217, 75, 75]
+const ORANGE = [201, 162, 77]
+const GREEN = [76, 175, 80]
 
 function lerp(a, b, t) {
   return Math.round(a + (b - a) * t)
@@ -25,22 +25,15 @@ function cellStyle(r) {
     return { background: "#0B0B0B", border: "1px solid #151515" }
   }
 
-  // Map [-10%, +10%] to [-1, +1]
   const max = 0.10
   const v = clamp(r, -max, max) / max
-
-  // Brighter: stronger opacity scaling
-  const opacity = 0.35 + (Math.abs(v) * 0.55) // 0.35..0.90
+  const opacity = 0.35 + (Math.abs(v) * 0.55)
 
   let bg
   if (v < 0) {
-    // red -> orange
-    const t = v + 1 // -1..0 -> 0..1
-    bg = interpColor(RED, ORANGE, t)
+    bg = interpColor(RED, ORANGE, v + 1)
   } else {
-    // orange -> green
-    const t = v // 0..1
-    bg = interpColor(ORANGE, GREEN, t)
+    bg = interpColor(ORANGE, GREEN, v)
   }
 
   return {
@@ -53,6 +46,18 @@ function cellStyle(r) {
 export default function MonthlyHeatmapPage() {
   const { data, error } = useJson("/monthly_returns.json")
 
+  // 🔒 Kill scrollbars (Framer-safe)
+  useEffect(() => {
+    const prevHtml = document.documentElement.style.overflow
+    const prevBody = document.body.style.overflow
+    document.documentElement.style.overflow = "hidden"
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.documentElement.style.overflow = prevHtml
+      document.body.style.overflow = prevBody
+    }
+  }, [])
+
   if (!data) {
     return (
       <div style={wrap}>
@@ -63,11 +68,8 @@ export default function MonthlyHeatmapPage() {
 
   const byYear = new Map()
   for (const row of data) {
-    const y = row.year
-    const m = row.month
-    const r = row.return
-    if (!byYear.has(y)) byYear.set(y, Array(12).fill(null))
-    byYear.get(y)[m - 1] = r
+    if (!byYear.has(row.year)) byYear.set(row.year, Array(12).fill(null))
+    byYear.get(row.year)[row.month - 1] = row.return
   }
   const years = Array.from(byYear.keys()).sort((a, b) => a - b)
 
@@ -85,19 +87,43 @@ export default function MonthlyHeatmapPage() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "48px repeat(12, 1fr)", gap: 6 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "48px repeat(12, 1fr)",
+          gap: 6,
+        }}
+      >
         <div />
         {monthNames.map((m) => (
-          <div key={m} style={{ color: "#777", fontSize: 11, textAlign: "center" }}>{m}</div>
+          <div
+            key={m}
+            style={{ color: "#777", fontSize: 11, textAlign: "center" }}
+          >
+            {m}
+          </div>
         ))}
 
         {years.map((y) => (
           <React.Fragment key={y}>
-            <div style={{ color: "#777", fontSize: 11, display: "flex", alignItems: "center" }}>{y}</div>
+            <div
+              style={{
+                color: "#777",
+                fontSize: 11,
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              {y}
+            </div>
             {byYear.get(y).map((r, idx) => (
               <div
                 key={idx}
-                title={r == null ? `${y}-${idx + 1}: n/a` : `${y}-${idx + 1}: ${(r * 100).toFixed(2)}%`}
+                title={
+                  r == null
+                    ? `${y}-${idx + 1}: n/a`
+                    : `${y}-${idx + 1}: ${(r * 100).toFixed(2)}%`
+                }
                 style={{
                   ...cellStyle(r),
                   height: 28,
@@ -119,7 +145,9 @@ const wrap = {
   padding: 16,
   boxSizing: "border-box",
   fontFamily: "Inter, system-ui, Arial",
+  overflow: "hidden", // ✅ KEY LINE
 }
+
 const loading = { color: "#777", fontSize: 12 }
 const err = { color: "#777", fontSize: 12, marginBottom: 8 }
 

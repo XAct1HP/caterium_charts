@@ -1,4 +1,5 @@
-import React from "react"
+// src/pages/AllocationPage.jsx
+import React, { useEffect } from "react"
 import {
   AreaChart,
   Area,
@@ -6,12 +7,23 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  LabelList,
 } from "recharts"
 import { useJson } from "../lib/useJson"
 
 export default function AllocationPage() {
   const { data, error } = useJson("/allocation_two_sleeve.json")
+
+  // Kill scrollbars (Framer-safe, same pattern as other pages)
+  useEffect(() => {
+    const prevHtml = document.documentElement.style.overflow
+    const prevBody = document.body.style.overflow
+    document.documentElement.style.overflow = "hidden"
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.documentElement.style.overflow = prevHtml
+      document.body.style.overflow = prevBody
+    }
+  }, [])
 
   return (
     <div style={wrap}>
@@ -24,6 +36,7 @@ export default function AllocationPage() {
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} stackOffset="expand">
               <XAxis dataKey="date" hide />
+
               <YAxis
                 tick={tick}
                 axisLine={false}
@@ -31,13 +44,16 @@ export default function AllocationPage() {
                 domain={[0, 1]}
                 tickFormatter={(v) => `${Math.round(v * 100)}%`}
               />
+
               <Tooltip
                 contentStyle={tooltip}
                 labelStyle={{ color: "#AAA" }}
                 formatter={(v, key) => {
-                  const name =
-                    key === "aggressive_pct" ? "Main Strategy" : "Reserve Fund"
-                  return [`${(v * 100).toFixed(1)}%`, name]
+                  const labelMap = {
+                    aggressive_pct: "Main Strategy",
+                    reserve_pct: "Reserve Fund",
+                  }
+                  return [`${(v * 100).toFixed(1)}%`, labelMap[key] ?? key]
                 }}
               />
 
@@ -49,7 +65,7 @@ export default function AllocationPage() {
                 stroke="#C9A24D"
                 fill="#C9A24D"
                 fillOpacity={0.22}
-                name="Main Strategy"
+                dot={false}
               />
 
               {/* Reserve Fund */}
@@ -60,7 +76,7 @@ export default function AllocationPage() {
                 stroke="#777"
                 fill="#777"
                 fillOpacity={0.18}
-                name="Reserve Fund"
+                dot={false}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -77,7 +93,9 @@ const wrap = {
   padding: 16,
   boxSizing: "border-box",
   fontFamily: "Inter, system-ui, Arial",
+  overflow: "hidden", // ✅ KEY LINE
 }
+
 const loading = { color: "#777", fontSize: 12 }
 const err = { color: "#777", fontSize: 12, marginBottom: 8 }
 const tick = { fill: "#777", fontSize: 12 }
@@ -87,14 +105,3 @@ const tooltip = {
   color: "#E6E6E6",
   fontSize: 12,
 }
-
-const legendRow = {
-  display: "flex",
-  gap: 16,
-  marginTop: 10,
-  color: "#E6E6E6",
-  fontSize: 12,
-  alignItems: "center",
-}
-const legendItem = { display: "flex", gap: 8, alignItems: "center" }
-const dot = { width: 10, height: 10, borderRadius: 999 }
