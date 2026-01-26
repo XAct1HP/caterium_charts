@@ -14,54 +14,39 @@ import { useJson } from "../lib/useJson"
 export default function DrawdownRecoveryPage() {
   const { data, error } = useJson("/drawdown_recovery.json")
 
-  // Turn events into drawdown buckets (bar chart needs categories)
+  // Build a histogram: X = recovery-days buckets, Y = count of drawdowns
   const chartData = useMemo(() => {
     if (!Array.isArray(data) || data.length === 0) return null
 
-    // Bucket size in percentage points (2% buckets: 0–2, 2–4, ...).
-    const bucketPct = 2
+    // Bucket size in days (edit this to 5, 10, 20, etc.)
+    const bucketDays = 10
 
-    // Parse events
-    const events = data
-      .map((d) => {
-        const drawdown = Number(d.drawdown) // negative fraction (e.g. -0.083)
-        const recoveryDays = Number(d.recovery_days)
-        if (!Number.isFinite(drawdown) || !Number.isFinite(recoveryDays)) return null
-        return { drawdown, recoveryDays }
-      })
-      .filter(Boolean)
+    const values = data
+      .map((d) => Number(d.recovery_days))
+      .filter((v) => Number.isFinite(v) && v >= 0)
 
-    if (events.length === 0) return null
+    if (values.length === 0) return null
 
-    // Group into buckets by absolute drawdown percent
     const buckets = new Map()
 
-    for (const e of events) {
-      const ddAbsPct = Math.abs(e.drawdown) * 100 // e.g. 8.3
-      const lo = Math.floor(ddAbsPct / bucketPct) * bucketPct
-      const hi = lo + bucketPct
-
-      // 0–2% bucket is fine, but most drawdowns start >0; keep it anyway.
+    for (const v of values) {
+      const lo = Math.floor(v / bucketDays) * bucketDays
+      const hi = lo + bucketDays
       const key = `${lo}-${hi}`
-      if (!buckets.has(key)) buckets.set(key, { lo, hi, values: [] })
-      buckets.get(key).values.push(e.recoveryDays)
+      buckets.set(key, (buckets.get(key) ?? 0) + 1)
     }
 
-    // Helper: median
-    const median = (arr) => {
-      const a = [...arr].sort((x, y) => x - y)
-      const mid = Math.floor(a.length / 2)
-      return a.length % 2 ? a[mid] : (a[mid - 1] + a[mid]) / 2
-    }
-
-    // Build chart rows (sorted by bucket)
-    const rows = [...buckets.values()]
+    const rows = [...buckets.entries()]
+      .map(([key, count]) => {
+        const [lo, hi] = key.split("-").map(Number)
+        return {
+          bucket: `${lo}–${hi}d`,
+          lo,
+          hi,
+          count,
+        }
+      })
       .sort((a, b) => a.lo - b.lo)
-      .map((b) => ({
-        bucket: `${b.lo}–${b.hi}%`,
-        median_recovery_days: Number(median(b.values).toFixed(1)),
-        count: b.values.length,
-      }))
 
     return rows
   }, [data])
@@ -77,6 +62,7 @@ export default function DrawdownRecoveryPage() {
           <BarChart data={chartData} margin={{ top: 18, right: 18, bottom: 28, left: 18 }}>
             <CartesianGrid stroke="#151515" vertical={false} />
 
+            {/* X = Recovery time ranges */}
             <XAxis
               dataKey="bucket"
               tick={tick}
@@ -84,28 +70,24 @@ export default function DrawdownRecoveryPage() {
               tickLine={false}
             />
 
+            {/* Y = Count of drawdowns */}
             <YAxis
               tick={tick}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(v) => `${Math.round(v)}d`}
+              allowDecimals={false}
             />
 
             <Tooltip
               contentStyle={tooltip}
               labelStyle={tooltipLabel}
               itemStyle={tooltipItem}
-              formatter={(value, name, props) => {
-                if (name === "median_recovery_days") {
-                  return [`${value}d`, "Median Recovery"]
-                }
-                return [value, name]
-              }}
-              labelFormatter={(label) => `Drawdown Bucket: ${label}`}
+              labelFormatter={(label) => `Recovery: ${label}`}
+              formatter={(value) => [value, "Drawdowns"]}
             />
 
             <Bar
-              dataKey="median_recovery_days"
+              dataKey="count"
               fill={GOLD}
               radius={[6, 6, 0, 0]}
             />
@@ -130,7 +112,7 @@ const wrap = {
 const loading = { color: "#777", fontSize: 12 }
 const tick = { fill: "#777", fontSize: 12 }
 
-// Tooltip: black box, GOLD text (as requested)
+// Tooltip: black box, GOLD text
 const tooltip = {
   backgroundColor: "#0B0B0B",
   border: "1px solid #222",
