@@ -16,7 +16,7 @@ export default function EquityPage() {
 
   const [showBenchmark, setShowBenchmark] = useState(false)
 
-  // Extra-safe: prevent any body-level scrollbars in embeds
+  // Extra-safe: prevent scrollbars in embeds (Framer)
   useEffect(() => {
     const prevHtml = document.documentElement.style.overflow
     const prevBody = document.body.style.overflow
@@ -28,24 +28,35 @@ export default function EquityPage() {
     }
   }, [])
 
+  // Always build a merged dataset (so the benchmark line doesn't "remount" with new keys)
   const merged = useMemo(() => {
     if (!Array.isArray(data)) return null
-    if (!showBenchmark || !Array.isArray(benchData)) return data
 
-    const benchMap = new Map(benchData.map((d) => [d.date, d]))
+    const benchMap = Array.isArray(benchData)
+      ? new Map(benchData.map((d) => [d.date, d]))
+      : null
+
     return data.map((d) => ({
       ...d,
-      spx_equity_index: benchMap.get(d.date)?.equity_index ?? null,
+      spx_equity_index: benchMap?.get(d.date)?.equity_index ?? null,
     }))
-  }, [data, benchData, showBenchmark])
+  }, [data, benchData])
 
   return (
     <div style={wrap}>
+      {/* Opacity transition for the benchmark line */}
+      <style>{`
+        .spxLine path {
+          transition: opacity 450ms ease;
+        }
+      `}</style>
+
       {!merged ? (
         <div style={loading}>Loading…</div>
       ) : (
         <>
           {error ? <div style={err}>Data error: {error}</div> : null}
+          {/* Only show benchmark errors when user is trying to compare */}
           {showBenchmark && benchErr ? (
             <div style={err}>Benchmark error: {benchErr}</div>
           ) : null}
@@ -67,6 +78,7 @@ export default function EquityPage() {
                 <YAxis tick={tick} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={tooltip} labelStyle={{ color: "#AAA" }} />
 
+                {/* Caterium (keep your normal animation if you want) */}
                 <Line
                   type="monotone"
                   dataKey="equity_index"
@@ -77,17 +89,17 @@ export default function EquityPage() {
                   animationDuration={600}
                 />
 
-                {showBenchmark && (
-                  <Line
-                    type="monotone"
-                    dataKey="spx_equity_index"
-                    stroke="#66B6FF"
-                    strokeWidth={2}
-                    dot={false}
-                    isAnimationActive
-                    animationDuration={900}
-                  />
-                )}
+                {/* Benchmark: always mounted, fade via opacity (no Recharts animation => no stutter) */}
+                <Line
+                  className="spxLine"
+                  type="monotone"
+                  dataKey="spx_equity_index"
+                  stroke="#66B6FF"
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={false}
+                  strokeOpacity={showBenchmark ? 1 : 0}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -103,7 +115,7 @@ const wrap = {
   background: "#000",
   padding: 16,
   boxSizing: "border-box",
-  overflow: "hidden", // ✅ KEY FIX: prevents scrollbars from padding/overflow
+  overflow: "hidden",
   fontFamily: "Inter, system-ui, Arial",
 }
 
@@ -116,7 +128,7 @@ const topBar = {
 
 const chartWrap = {
   width: "100%",
-  height: "calc(100% - 44px)", // leaves room for the button row
+  height: "calc(100% - 44px)",
 }
 
 const btn = {
