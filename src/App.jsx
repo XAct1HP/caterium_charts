@@ -5,6 +5,7 @@ import DrawdownPage from "./pages/DrawdownPage"
 import AllocationPage from "./pages/AllocationPage"
 import MonthlyHeatmapPage from "./pages/MonthlyHeatmapPage"
 import DistributionPage from "./pages/DistributionPage"
+import AccountEquityPage from "./pages/AccountEquityPage"
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
       <Route path="/allocation" element={<AllocationPage />} />
       <Route path="/monthly" element={<MonthlyHeatmapPage />} />
       <Route path="/distribution" element={<DistributionPage />} />
+      <Route path="/account-equity" element={<AccountEquityPage />} />
     </Routes>
   )
 }
