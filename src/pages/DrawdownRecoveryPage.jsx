@@ -1,4 +1,4 @@
-// src/pages/RiskReturnPage.jsx
+// src/pages/DrawdownRecoveryPage.jsx
 import React, { useMemo } from "react"
 import {
   ResponsiveContainer,
@@ -12,26 +12,17 @@ import {
 } from "recharts"
 import { useJson } from "../lib/useJson"
 
-export default function RiskReturnPage() {
-  const { data, error } = useJson("/equity_chart_data.json")
+export default function DrawdownRecoveryPage() {
+  const { data, error } = useJson("/drawdown_recovery.json")
 
   const chartData = useMemo(() => {
-    if (!Array.isArray(data) || data.length === 0) return null
-
-    // Base equity for normalized return
-    const base = Number(data[0]?.equity ?? data[0]?.account_equity ?? 1) || 1
-
-    // Build points: X=drawdown, Y=return
+    if (!Array.isArray(data)) return null
     return data
       .map((d) => {
-        const equity = Number(d.equity ?? d.account_equity)
-        const dd = Number(d.drawdown)
-        if (!Number.isFinite(equity) || !Number.isFinite(dd)) return null
-
-        return {
-          drawdown: dd, // negative values (0 at peak)
-          return: (equity - base) / base, // normalized return from start
-        }
+        const drawdown = Number(d.drawdown)
+        const recoveryDays = Number(d.recovery_days)
+        if (!Number.isFinite(drawdown) || !Number.isFinite(recoveryDays)) return null
+        return { drawdown, recoveryDays }
       })
       .filter(Boolean)
   }, [data])
@@ -44,10 +35,10 @@ export default function RiskReturnPage() {
         </div>
       ) : (
         <ResponsiveContainer width="100%" height="100%">
-          <ScatterChart margin={{ top: 18, right: 18, bottom: 18, left: 18 }}>
+          <ScatterChart margin={{ top: 18, right: 18, bottom: 28, left: 18 }}>
             <CartesianGrid stroke="#151515" vertical={false} />
 
-            {/* X = Drawdown */}
+            {/* X = Drawdown depth (negative %) */}
             <XAxis
               dataKey="drawdown"
               type="number"
@@ -56,39 +47,41 @@ export default function RiskReturnPage() {
               axisLine={false}
               tickLine={false}
               tickFormatter={fmtPct0}
+              label={{ value: "Drawdown", position: "insideBottom", offset: -10, fill: "#777", fontSize: 12 }}
             />
 
-            {/* Y = Return */}
+            {/* Y = Days to recover */}
             <YAxis
-              dataKey="return"
+              dataKey="recoveryDays"
               type="number"
-              domain={["auto", "auto"]}
+              domain={[0, "auto"]}
               tick={tick}
               axisLine={false}
               tickLine={false}
-              tickFormatter={fmtPct0}
+              tickFormatter={fmtDays}
+              label={{ value: "Days to Recovery", angle: -90, position: "insideLeft", offset: 6, fill: "#777", fontSize: 12 }}
             />
 
-            {/* Reference lines at 0 */}
+            {/* Reference lines */}
             <ReferenceLine x={0} stroke="#222" />
             <ReferenceLine y={0} stroke="#222" />
 
             <Tooltip
               contentStyle={tooltip}
-              labelStyle={{ color: "#AAA" }}
+              labelStyle={{ color: "#FFFFFF" }}
               formatter={(value, name) => {
+                if (name === "recoveryDays") return [fmtDays(value), "Days to Recovery"]
                 if (name === "drawdown") return [fmtPct2(value), "Drawdown"]
-                if (name === "return") return [fmtPct2(value), "Return"]
                 return [value, name]
               }}
+              labelFormatter={() => "Event"}
             />
 
-            {/* Envelope cloud (points) */}
+            {/* Points */}
             <Scatter
               data={chartData}
               fill="#C9A24D"
-              opacity={0.75}
-              // Small points, no labels
+              opacity={0.8}
               shape="circle"
             />
           </ScatterChart>
@@ -109,10 +102,11 @@ const wrap = {
 
 const loading = { color: "#777", fontSize: 12 }
 const tick = { fill: "#777", fontSize: 12 }
+
 const tooltip = {
   backgroundColor: "#0B0B0B",
   border: "1px solid #222",
-  color: "#E6E6E6",
+  color: "#FFFFFF",
   fontSize: 12,
 }
 
@@ -126,4 +120,10 @@ function fmtPct2(v) {
   const n = Number(v)
   if (!Number.isFinite(n)) return v
   return `${(n * 100).toFixed(2)}%`
+}
+
+function fmtDays(v) {
+  const n = Number(v)
+  if (!Number.isFinite(n)) return v
+  return `${Math.round(n)}d`
 }
