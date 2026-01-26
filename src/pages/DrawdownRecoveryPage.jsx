@@ -2,29 +2,68 @@
 import React, { useMemo } from "react"
 import {
   ResponsiveContainer,
-  ScatterChart,
-  Scatter,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   Tooltip,
   CartesianGrid,
-  ReferenceLine,
 } from "recharts"
 import { useJson } from "../lib/useJson"
 
 export default function DrawdownRecoveryPage() {
   const { data, error } = useJson("/drawdown_recovery.json")
 
+  // Turn events into drawdown buckets (bar chart needs categories)
   const chartData = useMemo(() => {
-    if (!Array.isArray(data)) return null
-    return data
+    if (!Array.isArray(data) || data.length === 0) return null
+
+    // Bucket size in percentage points (2% buckets: 0–2, 2–4, ...).
+    const bucketPct = 2
+
+    // Parse events
+    const events = data
       .map((d) => {
-        const drawdown = Number(d.drawdown)
+        const drawdown = Number(d.drawdown) // negative fraction (e.g. -0.083)
         const recoveryDays = Number(d.recovery_days)
         if (!Number.isFinite(drawdown) || !Number.isFinite(recoveryDays)) return null
         return { drawdown, recoveryDays }
       })
       .filter(Boolean)
+
+    if (events.length === 0) return null
+
+    // Group into buckets by absolute drawdown percent
+    const buckets = new Map()
+
+    for (const e of events) {
+      const ddAbsPct = Math.abs(e.drawdown) * 100 // e.g. 8.3
+      const lo = Math.floor(ddAbsPct / bucketPct) * bucketPct
+      const hi = lo + bucketPct
+
+      // 0–2% bucket is fine, but most drawdowns start >0; keep it anyway.
+      const key = `${lo}-${hi}`
+      if (!buckets.has(key)) buckets.set(key, { lo, hi, values: [] })
+      buckets.get(key).values.push(e.recoveryDays)
+    }
+
+    // Helper: median
+    const median = (arr) => {
+      const a = [...arr].sort((x, y) => x - y)
+      const mid = Math.floor(a.length / 2)
+      return a.length % 2 ? a[mid] : (a[mid - 1] + a[mid]) / 2
+    }
+
+    // Build chart rows (sorted by bucket)
+    const rows = [...buckets.values()]
+      .sort((a, b) => a.lo - b.lo)
+      .map((b) => ({
+        bucket: `${b.lo}–${b.hi}%`,
+        median_recovery_days: Number(median(b.values).toFixed(1)),
+        count: b.values.length,
+      }))
+
+    return rows
   }, [data])
 
   return (
@@ -35,61 +74,49 @@ export default function DrawdownRecoveryPage() {
         </div>
       ) : (
         <ResponsiveContainer width="100%" height="100%">
-          <ScatterChart margin={{ top: 18, right: 18, bottom: 28, left: 18 }}>
+          <BarChart data={chartData} margin={{ top: 18, right: 18, bottom: 28, left: 18 }}>
             <CartesianGrid stroke="#151515" vertical={false} />
 
-            {/* X = Drawdown depth (negative %) */}
             <XAxis
-              dataKey="drawdown"
-              type="number"
-              domain={["auto", 0]}
+              dataKey="bucket"
               tick={tick}
               axisLine={false}
               tickLine={false}
-              tickFormatter={fmtPct0}
-              label={{ value: "Drawdown", position: "insideBottom", offset: -10, fill: "#777", fontSize: 12 }}
             />
 
-            {/* Y = Days to recover */}
             <YAxis
-              dataKey="recoveryDays"
-              type="number"
-              domain={[0, "auto"]}
               tick={tick}
               axisLine={false}
               tickLine={false}
-              tickFormatter={fmtDays}
-              label={{ value: "Days to Recovery", angle: -90, position: "insideLeft", offset: 6, fill: "#777", fontSize: 12 }}
+              tickFormatter={(v) => `${Math.round(v)}d`}
             />
-
-            {/* Reference lines */}
-            <ReferenceLine x={0} stroke="#222" />
-            <ReferenceLine y={0} stroke="#222" />
 
             <Tooltip
               contentStyle={tooltip}
-              labelStyle={{ color: "#FFFFFF" }}
-              formatter={(value, name) => {
-                if (name === "recoveryDays") return [fmtDays(value), "Days to Recovery"]
-                if (name === "drawdown") return [fmtPct2(value), "Drawdown"]
+              labelStyle={tooltipLabel}
+              itemStyle={tooltipItem}
+              formatter={(value, name, props) => {
+                if (name === "median_recovery_days") {
+                  return [`${value}d`, "Median Recovery"]
+                }
                 return [value, name]
               }}
-              labelFormatter={() => "Event"}
+              labelFormatter={(label) => `Drawdown Bucket: ${label}`}
             />
 
-            {/* Points */}
-            <Scatter
-              data={chartData}
-              fill="#C9A24D"
-              opacity={0.8}
-              shape="circle"
+            <Bar
+              dataKey="median_recovery_days"
+              fill={GOLD}
+              radius={[6, 6, 0, 0]}
             />
-          </ScatterChart>
+          </BarChart>
         </ResponsiveContainer>
       )}
     </div>
   )
 }
+
+const GOLD = "#C9A24D"
 
 const wrap = {
   width: "100vw",
@@ -103,27 +130,12 @@ const wrap = {
 const loading = { color: "#777", fontSize: 12 }
 const tick = { fill: "#777", fontSize: 12 }
 
+// Tooltip: black box, GOLD text (as requested)
 const tooltip = {
   backgroundColor: "#0B0B0B",
   border: "1px solid #222",
-  color: "#FFFFFF",
+  color: GOLD,
   fontSize: 12,
 }
-
-function fmtPct0(v) {
-  const n = Number(v)
-  if (!Number.isFinite(n)) return v
-  return `${(n * 100).toFixed(0)}%`
-}
-
-function fmtPct2(v) {
-  const n = Number(v)
-  if (!Number.isFinite(n)) return v
-  return `${(n * 100).toFixed(2)}%`
-}
-
-function fmtDays(v) {
-  const n = Number(v)
-  if (!Number.isFinite(n)) return v
-  return `${Math.round(n)}d`
-}
+const tooltipLabel = { color: GOLD }
+const tooltipItem = { color: GOLD }
