@@ -10,10 +10,8 @@ export default function EquityPage() {
   const { data, error } = useJson("/equity_curve_updated.json")
 
   // Load benchmark only when needed (still smooth once shown)
-  const [showBenchmark, setShowBenchmark] = useState(false)
-  const { data: benchData, error: benchErr } = useJson(
-    showBenchmark ? "/benchmark_equity_curve.json" : null
-  )
+  // Always load benchmark data
+  const { data: benchData, error: benchErr } = useJson("/benchmark_equity_curve.json")
 
   // Merge series by date so both lines align perfectly
   const merged = useMemo(() => {
