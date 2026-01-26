@@ -68,13 +68,6 @@ export default function DrawdownPage() {
       `}</style>
 
       <div style={topbar}>
-        <div>
-          <div style={title}>Drawdown Profile</div>
-          <div style={subtitle}>
-            Depth and duration of drawdowns across the full track record.
-          </div>
-        </div>
-
         <button
           type="button"
           onClick={() => setShowBenchmark((v) => !v)}
