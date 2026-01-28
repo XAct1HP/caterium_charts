@@ -12,8 +12,27 @@ import { useJson } from "../lib/useJson"
 
 function fmt(x) {
   if (x == null || Number.isNaN(x)) return ""
-  // you can change decimals if you want
   return Number(x).toFixed(2)
+}
+
+/**
+ * Custom label for the zero line
+ * Positions text slightly right of the line and above the bars
+ */
+function ZeroLabel({ viewBox }) {
+  const { x, y } = viewBox
+  return (
+    <text
+      x={x + 6}      // move right of the red line
+      y={y - 8}      // move above the bars
+      fill="#E03A3A"
+      fontSize={12}
+      fontWeight={500}
+      textAnchor="start"
+    >
+      0
+    </text>
+  )
 }
 
 export default function DistributionPage() {
@@ -43,30 +62,20 @@ export default function DistributionPage() {
           {error ? <div style={err}>Data error: {error}</div> : null}
 
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={shaped}>
-              <XAxis
-                xAxisId="x"
-                dataKey="bin_center"
-                type="number"
-                domain={["dataMin", "dataMax"]}
-                hide
-              />
+            <BarChart data={shaped} layout="vertical">
+              {/* Numeric horizontal axis */}
+              <XAxis type="number" hide />
 
-              <YAxis tick={tick} axisLine={false} tickLine={false} />
+              {/* Category axis for bins */}
+              <YAxis type="category" dataKey="bucket_label" hide />
 
-              {/* Vertical 0 line */}
+              {/* Zero reference line */}
               <ReferenceLine
-                xAxisId="x"
                 x={0}
                 stroke="#E03A3A"
                 strokeWidth={2}
                 ifOverflow="extendDomain"
-                label={{
-                  value: "0",
-                  position: "top",
-                  fill: "#E03A3A",
-                  fontSize: 12,
-                }}
+                label={<ZeroLabel />}
               />
 
               <Tooltip
@@ -99,7 +108,6 @@ const wrap = {
 }
 const loading = { color: "#777", fontSize: 12 }
 const err = { color: "#777", fontSize: 12, marginBottom: 8 }
-const tick = { fill: "#777", fontSize: 12 }
 const tooltip = {
   backgroundColor: "#0B0B0B",
   border: "1px solid #222",
