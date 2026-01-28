@@ -1,6 +1,5 @@
-// src/pages/MobileHeatmap.jsx
 import React, { useEffect } from "react"
-import { useJson } from "../lib/useJson"
+import { useJson } from "../../lib/useJson"
 
 const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 
@@ -27,14 +26,12 @@ function cellStyle(r) {
 
   const max = 0.10
   const v = clamp(r, -max, max) / max
-  const opacity = 0.35 + (Math.abs(v) * 0.55)
+  const opacity = 0.35 + Math.abs(v) * 0.55
 
-  let bg
-  if (v < 0) {
-    bg = interpColor(RED, ORANGE, v + 1)
-  } else {
-    bg = interpColor(ORANGE, GREEN, v)
-  }
+  const bg =
+    v < 0
+      ? interpColor(RED, ORANGE, v + 1)     // red -> orange
+      : interpColor(ORANGE, GREEN, v)       // orange -> green
 
   return {
     background: bg,
@@ -43,10 +40,10 @@ function cellStyle(r) {
   }
 }
 
-export default function MonthlyHeatmapPage() {
+export default function MonthlyHeatmapMobilePage() {
   const { data, error } = useJson("/monthly_returns.json")
 
-  // 🔒 Kill scrollbars (Framer-safe)
+  // Lock scrolling (Framer/mobile-friendly)
   useEffect(() => {
     const prevHtml = document.documentElement.style.overflow
     const prevBody = document.body.style.overflow
@@ -66,14 +63,19 @@ export default function MonthlyHeatmapPage() {
     )
   }
 
+  // year -> [12 months]
   const byYear = new Map()
   for (const row of data) {
-    if (!byYear.has(row.year)) byYear.set(row.year, Array(12).fill(null))
-    byYear.get(row.year)[row.month - 1] = row.return
+    const y = Number(row.year)
+    const mIdx = Number(row.month) - 1
+    const r = Number(row.return)
+    if (!byYear.has(y)) byYear.set(y, Array(12).fill(null))
+    if (mIdx >= 0 && mIdx < 12) byYear.get(y)[mIdx] = Number.isFinite(r) ? r : null
   }
 
-  const yearsAll = Array.from(byYear.keys()).sort((a, b) => a - b)
-  const years = yearsAll.slice(-5) // ✅ 4 year columns + 1 month column = 5 columns total
+  // ✅ Force year columns to include 2021 (fixed 4-year window: 2021–2024)
+  // This keeps your requirement: 5 columns total = Month label + 4 years
+  const years = [2021, 2022, 2023, 2024]
 
   return (
     <div style={wrap}>
@@ -89,7 +91,7 @@ export default function MonthlyHeatmapPage() {
         </div>
       </div>
 
-      {/* Year header row (kept OUTSIDE the grid so grid stays 12 rows) */}
+      {/* Year header row (outside grid so grid stays exactly 12 rows) */}
       <div
         style={{
           display: "grid",
@@ -113,8 +115,8 @@ export default function MonthlyHeatmapPage() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "48px repeat(4, 1fr)", // 5 columns total
-          gridTemplateRows: "repeat(12, 28px)",       // 12 rows total
+          gridTemplateColumns: "48px repeat(4, 1fr)",
+          gridTemplateRows: "repeat(12, 28px)",
           gap: 6,
         }}
       >
@@ -132,7 +134,7 @@ export default function MonthlyHeatmapPage() {
               {m}
             </div>
 
-            {/* 4 year columns */}
+            {/* Year columns */}
             {years.map((y) => {
               const r = byYear.get(y)?.[monthIdx] ?? null
               return (
@@ -176,7 +178,6 @@ const gradBar = {
   height: 10,
   borderRadius: 999,
   border: "1px solid #151515",
-  marginTop: 6,
   background:
     "linear-gradient(90deg, rgb(217,75,75) 0%, rgb(201,162,77) 50%, rgb(76,175,80) 100%)",
 }
