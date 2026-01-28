@@ -6,6 +6,7 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  ReferenceLine
 } from "recharts"
 import { useJson } from "../lib/useJson"
 
@@ -45,6 +46,19 @@ export default function DistributionPage() {
             <BarChart data={shaped}>
               <XAxis dataKey="bin_center" hide />
               <YAxis tick={tick} axisLine={false} tickLine={false} />
+
+              <ReferenceLine
+                x={0}
+                stroke="#E03A3A"
+                strokeWidth={2}
+                label={{
+                  value: "0",
+                  position: "top",
+                  fill: "#E03A3A",
+                  fontSize: 12,
+                }}
+              />
+
               <Tooltip
                 contentStyle={tooltip}
                 labelStyle={{ color: "#AAA" }}
@@ -54,6 +68,7 @@ export default function DistributionPage() {
                 }}
                 formatter={(v) => [v, "Count"]}
               />
+
               <Bar dataKey="count" fill="#C9A24D" opacity={0.85} />
             </BarChart>
           </ResponsiveContainer>
