@@ -59,7 +59,7 @@ export default function DrawdownRecoveryPage() {
         </div>
       ) : (
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ top: 18, right: 18, bottom: 28, left: 18 }}>
+          <BarChart data={chartData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
             <CartesianGrid stroke="#151515" vertical={false} />
 
             {/* X = Recovery time ranges */}
