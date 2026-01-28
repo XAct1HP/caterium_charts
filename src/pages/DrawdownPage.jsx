@@ -92,7 +92,7 @@ export default function DrawdownPage() {
                 tick={tick}
                 axisLine={false}
                 tickLine={false}
-                domain={["auto", 0]}
+                domain={[-40, 0]}
                 tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
                 width={30}
               />
