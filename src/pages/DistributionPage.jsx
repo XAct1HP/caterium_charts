@@ -6,7 +6,7 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine
+  ReferenceLine,
 } from "recharts"
 import { useJson } from "../lib/useJson"
 
@@ -44,13 +44,23 @@ export default function DistributionPage() {
 
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={shaped}>
-              <XAxis dataKey="bin_center" hide />
+              <XAxis
+                xAxisId="x"
+                dataKey="bin_center"
+                type="number"
+                domain={["dataMin", "dataMax"]}
+                hide
+              />
+
               <YAxis tick={tick} axisLine={false} tickLine={false} />
 
+              {/* Vertical 0 line */}
               <ReferenceLine
+                xAxisId="x"
                 x={0}
                 stroke="#E03A3A"
                 strokeWidth={2}
+                ifOverflow="extendDomain"
                 label={{
                   value: "0",
                   position: "top",
@@ -85,7 +95,7 @@ const wrap = {
   padding: 16,
   boxSizing: "border-box",
   fontFamily: "Inter, system-ui, Arial",
-  overflow: "hidden"
+  overflow: "hidden",
 }
 const loading = { color: "#777", fontSize: 12 }
 const err = { color: "#777", fontSize: 12, marginBottom: 8 }
