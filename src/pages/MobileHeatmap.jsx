@@ -1,5 +1,5 @@
 import React, { useEffect } from "react"
-import { useJson } from "../lib/useJson"
+import { useJson } from "../../lib/useJson"
 
 const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 
@@ -73,9 +73,8 @@ export default function MonthlyHeatmapMobilePage() {
     if (mIdx >= 0 && mIdx < 12) byYear.get(y)[mIdx] = Number.isFinite(r) ? r : null
   }
 
-  // ✅ Force year columns to include 2021 (fixed 4-year window: 2021–2024)
-  // This keeps your requirement: 5 columns total = Month label + 4 years
-  const years = [2021, 2022, 2023, 2024]
+  // ✅ Force year columns to include 2021–2025 (5 years)
+  const years = [2021, 2022, 2023, 2024, 2025]
 
   return (
     <div style={wrap}>
@@ -95,7 +94,7 @@ export default function MonthlyHeatmapMobilePage() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "48px repeat(4, 1fr)",
+          gridTemplateColumns: "48px repeat(5, 1fr)", // Month label + 5 years
           gap: 6,
           marginBottom: 6,
         }}
@@ -111,12 +110,12 @@ export default function MonthlyHeatmapMobilePage() {
         ))}
       </div>
 
-      {/* ✅ Mobile grid: 5 columns × 12 rows */}
+      {/* ✅ Mobile grid: 12 rows, 6 columns (Month + 5 years) */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "48px repeat(4, 1fr)",
-          gridTemplateRows: "repeat(12, 28px)",
+          gridTemplateColumns: "48px repeat(5, 1fr)", // 6 columns total
+          gridTemplateRows: "repeat(12, 28px)",       // 12 rows total
           gap: 6,
         }}
       >
