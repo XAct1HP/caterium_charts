@@ -74,8 +74,8 @@ export default function EquityPage() {
           <div style={chartWrap}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={merged}>
-                <XAxis dataKey="date" height={20} hide />
-                <YAxis tick={tick} axisLine={false} tickLine={false} width={20} />
+                <XAxis dataKey="date" height={0} hide />
+                <YAxis tick={tick} axisLine={false} tickLine={false} width={30} />
                 <Tooltip contentStyle={tooltip} labelStyle={{ color: "#AAA" }} />
 
                 {/* Caterium (keep your normal animation if you want) */}

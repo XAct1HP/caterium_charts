@@ -43,6 +43,7 @@ export default function AllocationPage() {
                 tickLine={false}
                 domain={[0, 1]}
                 tickFormatter={(v) => `${Math.round(v * 100)}%`}
+                width={30}
               />
 
               <Tooltip

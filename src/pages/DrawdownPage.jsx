@@ -83,7 +83,7 @@ export default function DrawdownPage() {
           ) : null}
 
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 8, right: 16, left: 4, bottom: 8 }}>
+            <AreaChart data={data} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
               <XAxis
                 dataKey="date"
                 hide
@@ -94,6 +94,7 @@ export default function DrawdownPage() {
                 tickLine={false}
                 domain={["auto", 0]}
                 tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
+                width={30}
               />
 
               <Tooltip

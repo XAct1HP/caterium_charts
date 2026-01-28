@@ -52,7 +52,7 @@ export default function DistributionPage() {
                 hide
               />
 
-              <YAxis tick={tick} axisLine={false} tickLine={false} />
+              <YAxis tick={tick} axisLine={false} tickLine={false} width={20} />
 
               {/* Vertical 0 line */}
               <ReferenceLine
