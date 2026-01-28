@@ -76,7 +76,7 @@ export default function DrawdownRecoveryPage() {
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
-              width={10}
+              width={20}
             />
 
             <Tooltip
