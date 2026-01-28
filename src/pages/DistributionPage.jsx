@@ -105,8 +105,8 @@ const page = {
 }
 
 const chartWrap = {
-  width: "100%",
-  height: "calc(100% - 44px)",
+  width: "calc(100% - 35px)",
+  height: "calc(100% - 35px)",
 }
 
 const loading = { color: "#777", fontSize: 12 }
