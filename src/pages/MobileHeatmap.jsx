@@ -1,5 +1,5 @@
 import React, { useEffect } from "react"
-import { useJson } from "../../lib/useJson"
+import { useJson } from "../lib/useJson"
 
 const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 
