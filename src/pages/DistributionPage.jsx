@@ -12,7 +12,6 @@ import { useJson } from "../lib/useJson"
 
 function fmt(x) {
   if (x == null || Number.isNaN(x)) return ""
-  // you can change decimals if you want
   return Number(x).toFixed(2)
 }
 
@@ -35,71 +34,85 @@ export default function DistributionPage() {
   }, [data])
 
   return (
-    <div style={wrap}>
+    <div style={page}>
       {!shaped ? (
         <div style={loading}>Loading…</div>
       ) : (
         <>
           {error ? <div style={err}>Data error: {error}</div> : null}
 
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={shaped}>
-              <XAxis
-                xAxisId="x"
-                dataKey="bin_center"
-                type="number"
-                domain={["dataMin", "dataMax"]}
-                hide
-              />
+          <div style={chartWrap}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={shaped} margin={{ top: 16, right: 16, bottom: 16, left: 16 }}>
+                <XAxis
+                  xAxisId="x"
+                  dataKey="bin_center"
+                  type="number"
+                  domain={["dataMin", "dataMax"]}
+                  hide
+                />
 
-              <YAxis tick={tick} axisLine={false} tickLine={false} width={20} />
+                <YAxis tick={tick} axisLine={false} tickLine={false} width={20} />
 
-              {/* Vertical 0 line */}
-              <ReferenceLine
-                xAxisId="x"
-                x={0}
-                stroke="#E03A3A"
-                strokeWidth={2}
-                ifOverflow="extendDomain"
-                label={{
-                  value: "0",
-                  position: "top",
-                  fill: "#E03A3A",
-                  fontSize: 12,
-                }}
-              />
+                {/* Vertical 0 line */}
+                <ReferenceLine
+                  xAxisId="x"
+                  x={0}
+                  stroke="#E03A3A"
+                  strokeWidth={2}
+                  ifOverflow="extendDomain"
+                  label={{
+                    value: "0",
+                    position: "top",
+                    fill: "#E03A3A",
+                    fontSize: 12,
+                  }}
+                />
 
-              <Tooltip
-                contentStyle={tooltip}
-                labelStyle={{ color: "#AAA" }}
-                labelFormatter={(_, payload) => {
-                  const p = payload?.[0]?.payload
-                  return p?.bucket_label ? `Bucket: ${p.bucket_label}` : ""
-                }}
-                formatter={(v) => [v, "Count"]}
-              />
+                <Tooltip
+                  contentStyle={tooltip}
+                  labelStyle={{ color: "#AAA" }}
+                  labelFormatter={(_, payload) => {
+                    const p = payload?.[0]?.payload
+                    return p?.bucket_label ? `Bucket: ${p.bucket_label}` : ""
+                  }}
+                  formatter={(v) => [v, "Count"]}
+                />
 
-              <Bar dataKey="count" fill="#C9A24D" opacity={0.85} />
-            </BarChart>
-          </ResponsiveContainer>
+                <Bar dataKey="count" fill="#C9A24D" opacity={0.85} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </>
       )}
     </div>
   )
 }
 
-const wrap = {
-  width: "100vw",
-  height: "100vh",
+/* =========================
+   Styles (NO SCROLLBARS)
+   ========================= */
+
+const page = {
+  width: "100%",
+  height: "100%",
   background: "#000",
-  padding: 16,
-  boxSizing: "border-box",
   fontFamily: "Inter, system-ui, Arial",
   overflow: "hidden",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
 }
+
+const chartWrap = {
+  width: "100%",
+  height: "100%",
+}
+
 const loading = { color: "#777", fontSize: 12 }
 const err = { color: "#777", fontSize: 12, marginBottom: 8 }
 const tick = { fill: "#777", fontSize: 12 }
+
 const tooltip = {
   backgroundColor: "#0B0B0B",
   border: "1px solid #222",
