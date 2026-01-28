@@ -105,7 +105,7 @@ const page = {
 }
 
 const chartWrap = {
-  width: "calc(100% - 35px)",
+  width: "100%",
   height: "calc(100% - 35px)",
 }
 
