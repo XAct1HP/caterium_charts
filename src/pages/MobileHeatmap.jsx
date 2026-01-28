@@ -73,7 +73,7 @@ export default function MonthlyHeatmapPage() {
   }
 
   const yearsAll = Array.from(byYear.keys()).sort((a, b) => a - b)
-  const years = yearsAll.slice(-4) // ✅ 4 year columns + 1 month column = 5 columns total
+  const years = yearsAll.slice(-5) // ✅ 4 year columns + 1 month column = 5 columns total
 
   return (
     <div style={wrap}>
