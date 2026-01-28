@@ -6,6 +6,7 @@ import AllocationPage from "./pages/AllocationPage"
 import MonthlyHeatmapPage from "./pages/MonthlyHeatmapPage"
 import DistributionPage from "./pages/DistributionPage"
 import DrawdownRecoveryPage from "./pages/DrawdownRecoveryPage"
+import MobileHeatmap from "./pages/MobileHeatmap"
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
       <Route path="/monthly" element={<MonthlyHeatmapPage />} />
       <Route path="/distribution" element={<DistributionPage />} />
       <Route path="/recovery" element={<DrawdownRecoveryPage />} />
+      <Route path="/mobileheatmap" element={<MobileHeatmap />} />
     </Routes>
   )
 }
